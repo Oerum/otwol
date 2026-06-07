@@ -96,6 +96,24 @@ The following environment variables can be configured inside `docker-compose.yml
 
 ---
 
+## 🛠️ Development
+
+### Managing Dependencies
+To maintain deterministic builds, all dependencies in [app/requirements.txt](file:///C:/Users/Filip/Desktop/otwol/app/requirements.txt) are strictly pinned. When adding or updating a library:
+1. Install the package in your local environment:
+   ```bash
+   pip install <package-name>
+   ```
+2. Update the frozen requirements:
+   ```bash
+   pip freeze > app/requirements.txt
+   ```
+
+### CI/CD Pipeline
+Pushing to the `main` branch or pushing a tag matching `v*.*.*` automatically triggers the GitHub Actions workflow to compile multi-arch images (`amd64`/`arm64`) and publish them to Docker Hub under `oerum/otwol`.
+
+---
+
 ## 📄 License
 
 This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
