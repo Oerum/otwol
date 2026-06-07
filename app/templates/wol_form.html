@@ -47,6 +47,9 @@
   </head>
 
   <body>
+    <!-- Sidebar backdrop for mobile view -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
     <!-- Top-Level Layout -->
     <div class="d-flex flex-column flex-md-row min-vh-100">
       
@@ -129,6 +132,17 @@
 
       <!-- Main Content Pane -->
       <main class="main-content flex-grow-1">
+        
+        <!-- Mobile Top Bar -->
+        <div class="mobile-header d-flex d-md-none justify-content-between align-items-center py-2 px-3 border-bottom mb-3" style="background-color: var(--sidebar-bg); border-color: var(--sidebar-border) !important; margin: -16px -16px 20px -16px;">
+          <a href="/" class="d-flex align-items-center gap-2 text-decoration-none">
+            <img src="{{ url_for('static', filename='images/logo.svg') }}" width="24" height="24" alt="Logo">
+            <span class="fw-bold" style="color: var(--stripe-text-primary); font-size: 16px; letter-spacing: -0.02em;">OTWOL</span>
+          </a>
+          <button id="sidebarToggle" class="btn p-1 border-0" type="button" aria-label="Toggle Navigation">
+            <i class="fa-solid fa-bars" style="font-size: 18px; color: var(--stripe-text-primary);"></i>
+          </button>
+        </div>
         
         <!-- Flash messages toast container -->
         <div aria-live="polite" aria-atomic="true" class="position-relative">
@@ -546,5 +560,34 @@
     <script src="{{ url_for('static', filename='js/arpscan.js') }}"></script>
     <script src="{{ url_for('static', filename='js/searchbar.js') }}"></script>
     <script src="{{ url_for('static', filename='js/crontimer.js') }}"></script>
+    
+    <!-- Mobile Sidebar Controller -->
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+        const body = document.body;
+
+        if (sidebarToggle && sidebarBackdrop) {
+          sidebarToggle.addEventListener('click', () => {
+            body.classList.toggle('sidebar-open');
+          });
+
+          sidebarBackdrop.addEventListener('click', () => {
+            body.classList.remove('sidebar-open');
+          });
+
+          // Also close sidebar if any sidebar-link is clicked (except dropdowns or modals)
+          const sidebarLinks = document.querySelectorAll('.sidebar-link');
+          sidebarLinks.forEach(link => {
+            if (!link.hasAttribute('data-bs-toggle')) {
+              link.addEventListener('click', () => {
+                body.classList.remove('sidebar-open');
+              });
+            }
+          });
+        }
+      });
+    </script>
   </body>
 </html>

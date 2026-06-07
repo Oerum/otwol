@@ -84,11 +84,11 @@ body {
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 100;
+  z-index: 1050;
   display: flex;
   flex-direction: column;
   padding: 24px;
-  transition: background-color 0.2s, border-color 0.2s;
+  transition: background-color 0.2s, border-color 0.2s, left 0.3s ease;
 }
 
 .sidebar-logo {
@@ -767,7 +767,81 @@ body {
   }
 }
 
+/* Sidebar backdrop for mobile view */
+.sidebar-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 1040; /* Just below sidebar (z-index: 1050) */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+body.sidebar-open .sidebar-backdrop {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 @media (max-width: 768px) {
+  .sidebar {
+    left: -260px;
+    box-shadow: 10px 0 15px -3px rgba(0, 0, 0, 0.08);
+  }
+  
+  body.sidebar-open .sidebar {
+    left: 0;
+  }
+  
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 16px !important;
+    min-height: auto !important;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    margin-bottom: 20px !important;
+  }
+  
+  .header-title h1 {
+    font-size: 20px !important;
+  }
+  
+  .header-title p {
+    font-size: 13px !important;
+  }
+  
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  
+  .search-container {
+    min-width: 0 !important;
+    width: 100%;
+  }
+  
+  .header-actions .btn-stripe-primary,
+  .header-actions .btn-group,
+  .header-actions .sort-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .header-actions .btn-group .dropdown-menu {
+    width: 100%;
+  }
+
   .device-list-header {
     display: none; /* Hide headers */
   }
@@ -784,6 +858,24 @@ body {
   }
   .col-device-actions {
     grid-column: 2;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-strip {
+    grid-template-columns: repeat(2, 1fr) !important; /* 2 columns on very small mobile devices to save space */
+    gap: 10px !important;
+    margin-bottom: 20px !important;
+  }
+  .stat-card {
+    padding: 12px 14px !important;
+  }
+  .stat-label {
+    font-size: 10px !important;
+    margin-bottom: 4px !important;
+  }
+  .stat-value {
+    font-size: 18px !important;
   }
 }
 
