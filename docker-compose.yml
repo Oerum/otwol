@@ -1,0 +1,53 @@
+services:
+  otwol:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: otwol-portal
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    volumes:
+      - ./appdata/db:/app/db
+      - ./appdata/cron:/etc/cron.d
+    environment:
+      # Timezone configuration
+      TZ: "Europe/Paris" # Set local timezone for scheduled tasks (e.g. Europe/Paris). Defaults to UTC.
+
+      # System & Network bindings
+      # PORT: "5000" # Host port mapping for the web app container. Defaults to 5000.
+      # BIND_ADDRESS: "0.0.0.0" # Network interface binding (use 0.0.0.0 for all interfaces, or specific host IP).
+      # LOG_LEVEL: "INFO" # Logging granularity (DEBUG to capture detail, INFO for normal run, WARN, ERROR).
+      
+      # Hosting & Storage
+      # SUBPATH_PREFIX: "/my-app" # Subpath hosting (e.g. /dashboard) if deploying behind a reverse proxy.
+      # DATABASE_FILE: "/app/db/computers.db" # Internal SQLite database path mapping. Default store is /app/db/computers.db.
+      
+      # Form Authentication Settings
+      # APP_LOCAL_AUTH: "false" # Activate form-based credential authentication. Fallback is false.
+      # APP_USER: "admin" # Username credential for database manager login. Default is admin.
+      # APP_PASS: "admin" # Password credential for database manager login. Default is admin.
+      
+      # SSO Authentication (OIDC)
+      # APP_OIDC_AUTH: "false" # Activate external Single Sign-On federation. Defaults to false.
+      # OIDC_ISSUER_URL: "https://auth.example.com" # Endpoint URL of OIDC provider (do not append metadata path or trailing slashes).
+      # OIDC_CLIENT_ID: "oidcclientid" # Client ID registered with the OIDC authentication provider.
+      # OIDC_CLIENT_SECRET: "oidcclientsecret" # Secret key matching the OIDC Client ID.
+      # OIDC_REDIRECT_URL: "http://localhost:5000" # The canonical external URL of this application deployment.
+      # OIDC_SCOPES: "openid email profile" # Request scopes during login flow (space-separated, defaults to openid email profile).
+      
+      # Dashboard Operations
+      # UI_ALLOW_EDIT: "true" # Enable dashboard operations to register or remove client machines.
+      # UI_AUTO_REFRESH: "true" # Toggle background Ajax status updates for monitored hosts.
+      # UI_REFRESH_SECONDS: "30" # Interval in seconds between automatic network status probes.
+      
+      # Network Scan Parameters
+      # SCAN_PING_TIMEOUT_MS: "300" # ICMP echo response waiting time in milliseconds.
+      # SCAN_ARP_INTERFACE: "eth0" # Ethernet card to utilize for local ARP queries.
+      # SCAN_ARP_TIMEOUT_MS: "300" # ARP response waiting time in milliseconds.
+      # SCAN_TCP_TIMEOUT_SEC: "1" # Port connection check waiting time in seconds.
+      
+      # Raw Layer-2 Wake-on-LAN Settings
+      # WOL_L2_MODE: "false" # Force Layer-2 raw frame transmission instead of Layer-4 UDP broadcast.
+      # WOL_L2_INTERFACE: "eth0" # Specific network device designated for L2 packet generation.
+

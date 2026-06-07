@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Wake On LAN tool to manage and wake computers on your network.">
+    <title>OTWOL - Dashboard</title>
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/logo.svg') }}"/>
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.svg') }}" type="image/svg+xml"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='assets/bootstrap/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='assets/fontawesome/css/fontawesome.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='assets/fontawesome/css/brands.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='assets/fontawesome/css/solid.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="{{ url_for('static', filename='assets/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/updatestatus.js') }}"></script>
+    <script>
+      const arp_scan_url = "{{ url_for('arp_scan') }}";
+      const check_status_url = "{{ url_for('check_status') }}";
+      const add_wol_cron_url = "{{ url_for('add_wol_cron') }}";
+      const add_sol_cron_url = "{{ url_for('add_sol_cron') }}";
+      const delete_wol_cron_url = "{{ url_for('delete_wol_cron') }}";
+      const delete_sol_cron_url = "{{ url_for('delete_sol_cron') }}";
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const autoRefresh = "{{ os.environ.get('UI_AUTO_REFRESH') or 'true' }}" !== 'false';
+        const refreshSecondsVal = "{{ os.environ.get('UI_REFRESH_SECONDS') or '' }}";
+        const refreshMs = refreshSecondsVal ? parseInt(refreshSecondsVal, 10) * 1000 : 30000;
+
+        if (autoRefresh) {
+          setInterval(() => {
+            const indicators = document.getElementsByClassName('status-indicator');
+            for (let i = 0; i < indicators.length; i++) {
+              const element = indicators[i];
+              const ip_address = element.getAttribute('data-ip-address');
+              const test_type = element.getAttribute('data-test-type');
+              const card = element.closest('.card');
+              const buttonElement = card ? card.querySelector('.status-power') : null;
+              if (typeof updateStatus === 'function') {
+                updateStatus(ip_address, test_type, element, buttonElement);
+              }
+            }
+          }, refreshMs);
+        }
+      });
+    </script>
+  </head>
+
+  <body>
+    <!-- Top-Level Layout -->
+    <div class="d-flex flex-column flex-md-row min-vh-100">
+      
+      <!-- Sidebar Navigation -->
+      <aside class="sidebar">
+        <a href="/" class="sidebar-logo">
+          <img src="{{ url_for('static', filename='images/logo.svg') }}" width="28" height="28" alt="Logo">
+          <span>OTWOL</span>
+        </a>
+        
+        <div class="sidebar-section">
+          <div class="sidebar-label">Management</div>
+          <ul class="sidebar-nav">
+            <li class="sidebar-nav-item">
+              <a href="/" class="sidebar-link active">
+                <i class="fa-solid fa-server"></i>
+                <span>Devices</span>
+              </a>
+            </li>
+            {% if os.environ.get('UI_ALLOW_EDIT') != 'false' -%}
+            <li class="sidebar-nav-item">
+              <a href="#" class="sidebar-link" data-bs-toggle="modal" data-bs-target="#addComputer">
+                <i class="fa-solid fa-plus-circle"></i>
+                <span>Add Device</span>
+              </a>
+            </li>
+            <li class="sidebar-nav-item">
+              <a href="#" class="sidebar-link" data-bs-toggle="modal" data-bs-target="#arpScan">
+                <i class="fa-solid fa-tower-broadcast"></i>
+                <span>Scan Network</span>
+              </a>
+            </li>
+            {% endif -%}
+          </ul>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-label">System</div>
+          <ul class="sidebar-nav">
+            <li class="sidebar-nav-item">
+              <a href="#" class="sidebar-link" data-bs-toggle="modal" data-bs-target="#aboutModal">
+                <i class="fa-solid fa-info-circle"></i>
+                <span>About</span>
+              </a>
+            </li>
+            <li class="sidebar-nav-item">
+              <div class="sidebar-link" id="darkModeBtn" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="fa-solid fa-moon"></i>
+                  <span>Dark Mode</span>
+                </div>
+                <div class="form-check form-switch m-0">
+                  <input class="form-check-input" type="checkbox" id="darkModeSwitch" checked style="cursor: pointer;">
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="sidebar-footer">
+          {% if os.environ.get('APP_LOCAL_AUTH') == 'true' or os.environ.get('APP_OIDC_AUTH') == 'true' -%}
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="text-truncate me-2" style="font-size: 13px; color: var(--stripe-text-secondary);">
+              <i class="fa-solid fa-user-circle me-1"></i>
+              <span>Connected</span>
+            </div>
+            <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-danger py-1 px-2" style="font-size: 11px; border-radius: 4px;">
+              <i class="fa-solid fa-sign-out"></i>
+              <span>Logout</span>
+            </a>
+          </div>
+          {% else -%}
+          <div class="text-muted" style="font-size: 12px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Anonymous Access</span>
+          </div>
+          {% endif -%}
+        </div>
+      </aside>
+
+      <!-- Main Content Pane -->
+      <main class="main-content flex-grow-1">
+        
+        <!-- Flash messages toast container -->
+        <div aria-live="polite" aria-atomic="true" class="position-relative">
+          <div class="toast-container position-absolute top-0 end-0 p-2" style="z-index: 1050;">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+            <div class="toast text-white bg-{{ category }} border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="3000">
+              <div class="toast-header">
+                <strong class="me-auto">{{ category|capitalize }}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+              </div>
+              <div class="toast-body">
+                {{ message }}
+              </div>
+            </div>
+            {% endfor %}
+          {% endwith %}
+          </div>
+        </div>
+
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+          <div class="header-title">
+            <h1>Devices</h1>
+            <p style="color: var(--stripe-text-secondary); margin: 4px 0 0 0; font-size: 14px;">Manage and wake your systems on the local network</p>
+          </div>
+          
+          <div class="header-actions">
+            <!-- Search container -->
+            <div class="search-container">
+              <i class="fa-solid fa-magnifying-glass search-icon"></i>
+              <input type="text" placeholder="Search Name, MAC or IP" class="search-input" value="">
+              <button type="button" class="search-clear-btn" onclick="clearSearchInput()" title="Clear">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <!-- Sort Dropdown -->
+            <div class="btn-group">
+              <button class="sort-btn dropdown-toggle" type="button" id="sortDropdownMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fa-solid fa-arrow-down-wide-short"></i>
+                <span>Sort</span>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="sortDropdownMenu">
+                <li><a class="dropdown-item" href="#" onclick="sortComputers('name')">Sort by Name</a></li>
+                <li><a class="dropdown-item" href="#" onclick="sortComputers('ip')">Sort by IP</a></li>
+                <li><a class="dropdown-item" href="#" onclick="sortComputers('mac')">Sort by MAC</a></li>
+              </ul>
+            </div>
+
+            <!-- Quick Add Button -->
+            {% if os.environ.get('UI_ALLOW_EDIT') != 'false' -%}
+            <button class="btn-stripe-primary" data-bs-toggle="modal" data-bs-target="#addComputer">
+              <i class="fa-solid fa-plus"></i>
+              <span>Add Device</span>
+            </button>
+            {% endif -%}
+          </div>
+        </div>
+
+        <!-- Summary Stats Strip -->
+        {% set active_schedules = namespace(count=0) %}
+        {% set paused_schedules = namespace(count=0) %}
+        {% set vacation_schedules = namespace(count=0) %}
+        {% for c in computers %}
+          {% if c.cron_wol_schedule or c.cron_sol_schedule %}
+            {% set active_schedules.count = active_schedules.count + 1 %}
+          {% endif %}
+          {% if c.schedules_paused %}
+            {% set paused_schedules.count = paused_schedules.count + 1 %}
+          {% endif %}
+          {% if c.vacation_until %}
+            {% set vacation_schedules.count = vacation_schedules.count + 1 %}
+          {% endif %}
+        {% endfor %}
+
+        <div class="stats-strip">
+          <div class="stat-card">
+            <div class="stat-label">Total Devices</div>
+            <div class="stat-value">{{ computers|length }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Active Schedules</div>
+            <div class="stat-value">{{ active_schedules.count }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Paused Policies</div>
+            <div class="stat-value">{{ paused_schedules.count }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Vacation Mode</div>
+            <div class="stat-value">{{ vacation_schedules.count }}</div>
+          </div>
+        </div>
+
+        <!-- Devices List View -->
+        <div class="device-list-container">
+          <div class="device-list-header">
+            <div>System / Name</div>
+            <div>Status</div>
+            <div>IP Address</div>
+            <div>Active Schedules</div>
+            <div class="text-end">Actions</div>
+          </div>
+
+          <div class="row row-sortable">
+            {% for computer in computers %}
+            <!-- Device Row -->
+            <div class="computer-card card col-12">
+              
+              <!-- Column 1: Identity -->
+              <div class="col-device-identity">
+                <div class="device-icon-wrapper">
+                  {% if computer.test_type in ['icmp', 'arp'] -%}
+                  <i class="fa-solid fa-desktop"></i>
+                  {% else -%}
+                  <i class="fa-solid fa-server"></i>
+                  {% endif -%}
+                </div>
+                <div class="device-meta title-sortable">
+                  <div class="device-name sortable">{{ computer.name }}</div>
+                  <div class="device-mac">{{ computer.mac_address }}</div>
+                </div>
+              </div>
+
+              <!-- Column 2: Status Pill -->
+              <div class="col-device-status">
+                <span class="status-indicator asleep" data-ip-address="{{ computer.ip_address }}" data-test-type="{{ computer.test_type }}"></span>
+              </div>
+
+              <!-- Column 3: IP and Check Mode -->
+              <div class="col-device-ip">
+                <div>{{ computer.ip_address }}</div>
+                {% if computer.test_type in ['icmp', 'arp'] -%}
+                <div class="check-type">{{ computer.test_type | upper }} check</div>
+                {% else -%}
+                <div class="check-type">TCP Port {{ computer.test_type }}</div>
+                {% endif -%}
+              </div>
+
+              <!-- Hidden helper nodes for exact JS sorting & filtering compliance -->
+              <div class="info-sortable d-none">
+                <span class="sortable">{{ computer.ip_address }}</span>
+                <span class="sortable">{{ computer.mac_address }}</span>
+              </div>
+
+              <!-- Column 4: Schedules Badges -->
+              <div class="col-device-schedules">
+                {% if computer.cron_wol_schedule is defined -%}
+                <div class="schedule-badge wake" 
+                     data-cron-expr="{{ computer.cron_wol_schedule }}" 
+                     data-paused="{{ 'true' if computer.schedules_paused else 'false' }}" 
+                     data-excluded="{{ computer.excluded_days or '' }}" 
+                     data-vacation="{{ computer.vacation_until or '' }}" 
+                     data-expiry="{{ computer.cron_wol_until or '' }}"
+                     title="Wake Cron Schedule{% if computer.cron_wol_until %} (Expires: {{ computer.cron_wol_until }}){% endif %}">
+                  <i class="fa-solid fa-circle-arrow-up"></i>
+                  <span>Wake: {{ computer.cron_wol_schedule }}{% if computer.cron_wol_until %} (until {{ computer.cron_wol_until }}){% endif %}</span>
+                  <span class="cron-timer-val ms-1 fw-semibold" style="opacity: 0.85; font-size: 10px;"></span>
+                </div>
+                {% endif -%}
+                {% if computer.cron_sol_schedule is defined -%}
+                <div class="schedule-badge sleep" 
+                     data-cron-expr="{{ computer.cron_sol_schedule }}" 
+                     data-paused="{{ 'true' if computer.schedules_paused else 'false' }}" 
+                     data-excluded="{{ computer.excluded_days or '' }}" 
+                     data-vacation="{{ computer.vacation_until or '' }}" 
+                     data-expiry="{{ computer.cron_sol_until or '' }}"
+                     title="Sleep Cron Schedule{% if computer.cron_sol_until %} (Expires: {{ computer.cron_sol_until }}){% endif %}">
+                  <i class="fa-solid fa-circle-arrow-down"></i>
+                  <span>Sleep: {{ computer.cron_sol_schedule }}{% if computer.cron_sol_until %} (until {{ computer.cron_sol_until }}){% endif %}</span>
+                  <span class="cron-timer-val ms-1 fw-semibold" style="opacity: 0.85; font-size: 10px;"></span>
+                </div>
+                {% endif -%}
+                {% if computer.schedules_paused -%}
+                <div class="schedule-badge paused" title="Schedules are paused">
+                  <i class="fa-solid fa-pause-circle"></i>
+                  <span>Paused</span>
+                </div>
+                {% endif -%}
+                {% if computer.vacation_until -%}
+                <div class="schedule-badge vacation" title="Vacation until {{ computer.vacation_until }}">
+                  <i class="fa-solid fa-plane"></i>
+                  <span>Until {{ computer.vacation_until }}</span>
+                </div>
+                {% endif -%}
+              </div>
+
+              <!-- Column 5: Actions -->
+              <div class="col-device-actions">
+                <!-- Power Toggle Button -->
+                <form method="POST" action="{{ url_for('wol_or_sol_send') }}" class="m-0">
+                  <input type="hidden" name="mac_address" value="{{ computer.mac_address }}">
+                  <button type="submit" class="status-power btn btn-success" data-bs-toggle="tooltip" data-bs-placement="top" title="Wake">
+                    <i class="fa-solid fa-power-off"></i>
+                  </button>
+                </form>
+
+                <!-- Configuration Triggers -->
+                {% if os.environ.get('UI_ALLOW_EDIT') != 'false' -%}
+                <button type="button" class="row-action-btn btn-configure-schedule" title="Configure Schedule"
+                        data-name="{{ computer.name }}"
+                        data-cron-wol-schedule="{{ computer.cron_wol_schedule if computer.cron_wol_schedule is defined else '' }}"
+                        data-cron-sol-schedule="{{ computer.cron_sol_schedule if computer.cron_sol_schedule is defined else '' }}"
+                        data-mac-address="{{ computer.mac_address }}"
+                        data-schedules-paused="{{ 'true' if computer.schedules_paused else 'false' }}"
+                        data-excluded-days="{{ computer.excluded_days or '' }}"
+                        data-vacation-until="{{ computer.vacation_until or '' }}"
+                        data-cron-wol-until="{{ computer.cron_wol_until or '' }}"
+                        data-cron-sol-until="{{ computer.cron_sol_until or '' }}">
+                  <i class="fa-regular fa-clock"></i>
+                </button>
+                <button type="button" class="row-action-btn" title="Edit Device" data-bs-toggle="modal" data-bs-target="#editComputer" data-name="{{ computer.name }}" data-mac-address="{{ computer.mac_address }}" data-ip-address="{{ computer.ip_address }}" data-test-type="{{ computer.test_type }}">
+                  <i class="fa-regular fa-pen-to-square"></i>
+                </button>
+                <button type="button" class="row-action-btn delete" title="Delete Device" data-bs-toggle="modal" data-bs-target="#staticDelete" data-action="{{ url_for('delete_computer') }}" data-name="mac_address" data-value="{{ computer.mac_address }}" data-message="Computer {{ computer.name }}">
+                  <i class="fa-regular fa-trash-can"></i>
+                </button>
+                {% endif -%}
+              </div>
+
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+      </main>
+    </div>
+
+    <!-- Modals -->
+    {% if os.environ.get('UI_ALLOW_EDIT') != 'false' -%}
+    <!-- Add Computer Modal -->
+    <div class="modal fade" id="addComputer" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="addComputerLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addComputerLabel">Add Device</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form method="POST" action="{{ url_for('add_computer') }}">
+            <div class="modal-body">
+              <div class="form-group">
+                <label for="name">Name</label>
+                <input type="text" class="form-control" name="name" id="name" required placeholder="e.g. HomeServer">
+              </div>
+              <div class="form-group">
+                <label for="mac_address">MAC Address</label>
+                <input type="text" class="form-control" name="mac_address" id="mac_address" placeholder="00:11:22:33:44:55" required>
+              </div>
+              <div class="form-group">
+                <label for="ip_address">IP Address</label>
+                <input type="text" class="form-control" name="ip_address" id="ip_address" placeholder="192.168.0.1" required>
+              </div>
+              <div class="form-group">
+                <label for="test_type">Status Check Method</label>
+                <input type="text" class="form-control" name="test_type" id="test_type" placeholder="icmp, arp or tcp port number" required>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn-stripe-secondary" id="arpScanButton" data-bs-target="#arpScan" data-bs-toggle="modal" data-bs-dismiss="modal">
+                <i class="fa-solid fa-radar me-1"></i> Scan Network
+              </button>
+              <button type="button" class="btn-stripe-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn-stripe-primary" id="confirmAdd">Add Device</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Computer Modal -->
+    <div class="modal fade" id="editComputer" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="editComputerLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editComputerLabel">Edit Device</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form method="POST" action="{{ url_for('edit_computer') }}">
+            <div class="modal-body">
+              <div class="form-group">
+                <label for="edit_name">Name</label>
+                <input type="text" class="form-control" name="name" id="edit_name" required>
+              </div>
+              <div class="form-group">
+                <label for="edit_mac_address">MAC Address</label>
+                <input type="text" class="form-control-plaintext" name="mac_address" id="edit_mac_address" readonly required>
+              </div>
+              <div class="form-group">
+                <label for="edit_ip_address">IP Address</label>
+                <input type="text" class="form-control" name="ip_address" id="edit_ip_address" required>
+              </div>
+              <div class="form-group">
+                <label for="edit_test_type">Status Check Method</label>
+                <input type="text" class="form-control" name="test_type" id="edit_test_type" required>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn-stripe-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn-stripe-primary" id="confirmEdit">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Schedule Drawer -->
+    <div id="cronSettingsDrawerBackdrop" class="drawer-backdrop" onclick="closeCronSettingsDrawer()"></div>
+    <div id="cronSettingsDrawer" class="drawer">
+      <div class="drawer-header">
+        <h5 class="drawer-title" id="cronSettingsDrawerLabel">Device Schedule Policies</h5>
+        <button type="button" class="drawer-close" onclick="closeCronSettingsDrawer()" aria-label="Close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="drawer-body">
+        <div id="cronSettingsContent"></div>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="staticDelete" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticDeleteLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="staticDeleteLabel">Delete Device</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body text-center py-4">
+            <div class="text-danger mb-3" style="font-size: 40px;">
+              <i class="fa-solid fa-circle-exclamation"></i>
+            </div>
+            <p>Are you sure you want to delete <strong id="deleteMessage"></strong>?</p>
+            <p class="text-muted small">This action cannot be undone and will remove all scheduled cron policies associated with this device.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-stripe-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn-stripe-primary btn-danger bg-danger border-0" id="confirmDelete">Delete Device</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Network Scan Modal -->
+    <div class="modal fade" id="arpScan" tabindex="-1" aria-labelledby="arpScanLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="arpScanLabel">Select an Active Network Device</h5>
+            <button type="button" class="btn-close" data-bs-target="#addComputer" data-bs-toggle="modal" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div id="loadingMessage" class="text-center py-4">
+              <div class="spinner-border text-primary mb-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <div>Scanning local network interfaces...</div>
+            </div>
+            <ul id="arpScanResults" class="list-group list-group-flush" style="display: none;"></ul>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-stripe-primary w-100" data-bs-target="#addComputer" data-bs-toggle="modal" data-bs-dismiss="modal">Back to Form</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif -%}
+
+    <!-- About Modal -->
+    <div class="modal fade" id="aboutModal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="aboutModalLabel">About OTWOL</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body py-4">
+            <div class="text-center mb-4">
+              <img src="{{ url_for('static', filename='images/logo.svg') }}" width="64" height="64" alt="Logo" class="mb-3">
+              <h4 class="fw-bold m-0">OTWOL</h4>
+              <p class="text-muted small">v1.0.0</p>
+            </div>
+            <p class="text-center">A lightweight Wake-on-LAN and Sleep-on-LAN dashboard to monitor and trigger network state transitions for local machines.</p>
+            <hr class="my-4" style="border-color: var(--stripe-border);">
+            <div class="d-flex justify-content-between align-items-center" style="font-size: 13px;">
+              <span style="color: var(--stripe-text-secondary);">License</span>
+              <span class="fw-semibold">Apache 2.0</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-2" style="font-size: 13px;">
+              <span style="color: var(--stripe-text-secondary);">Repository</span>
+              <a href="https://github.com/oerum/otwol" target="_blank" rel="noopener noreferrer" class="text-decoration-none fw-semibold">
+                <i class="fab fa-github me-1"></i> oerum/otwol
+              </a>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-stripe-secondary w-100" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    {% if os.environ.get('UI_ALLOW_EDIT') != 'false' -%}
+    <script src="{{ url_for('static', filename='js/editcomputer.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/editcron.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/delcomputer.js') }}"></script>
+    {% endif -%}
+    <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/darkmode.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/arpscan.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/searchbar.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/crontimer.js') }}"></script>
+  </body>
+</html>

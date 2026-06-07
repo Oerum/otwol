@@ -1,0 +1,7 @@
+WakeOnLan
+Flask
+gunicorn
+flask-login
+flask-sqlalchemy
+authlib
+requests
