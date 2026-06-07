@@ -50,8 +50,7 @@ Deploy the portal quickly using Docker Compose:
      otwol:
        image: oerum/otwol:latest # Or build locally using the Dockerfile
        container_name: otwol-portal
-       ports:
-         - "5000:5000"
+       network_mode: host
        restart: unless-stopped
        volumes:
          - ./appdata/db:/app/db
