@@ -480,14 +480,18 @@
             <h5 class="modal-title" id="arpScanLabel">Select an Active Network Device</h5>
             <button type="button" class="btn-close" data-bs-target="#addComputer" data-bs-toggle="modal" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body">
-            <div id="loadingMessage" class="text-center py-4">
-              <div class="spinner-border text-primary mb-2" role="status">
-                <span class="visually-hidden">Loading...</span>
+          <div class="modal-body p-0">
+            <div id="loadingMessage" style="display: block;">
+              <div class="scan-loading-wrapper">
+                <div class="scan-radar">
+                  <div class="scan-ping"></div>
+                  <i class="fa-solid fa-tower-broadcast scan-radar-icon"></i>
+                </div>
+                <h6 class="scan-loading-title">Scanning Network</h6>
+                <p class="scan-loading-subtitle">Discovering active devices on local interfaces...</p>
               </div>
-              <div>Scanning local network interfaces...</div>
             </div>
-            <ul id="arpScanResults" class="list-group list-group-flush" style="display: none;"></ul>
+            <ul id="arpScanResults" class="scan-device-list" style="display: none;"></ul>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn-stripe-primary w-100" data-bs-target="#addComputer" data-bs-toggle="modal" data-bs-dismiss="modal">Back to Form</button>

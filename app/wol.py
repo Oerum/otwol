@@ -23,6 +23,8 @@ ping_timeout = os.environ.get('SCAN_PING_TIMEOUT_MS', 300)
 arp_timeout = os.environ.get('SCAN_ARP_TIMEOUT_MS', 300)
 tcp_timeout = os.environ.get('SCAN_TCP_TIMEOUT_SEC', 1)
 arp_interface = os.environ.get('SCAN_ARP_INTERFACE')
+if arp_interface is None and os.path.exists('/.dockerenv'):
+  arp_interface = 'eth0'
 l2_wol_packet = os.environ.get('WOL_L2_MODE', 'false').lower() == 'true'
 l2_interface = os.environ.get('WOL_L2_INTERFACE', 'eth0')
 cron_filename = '/etc/cron.d/otwol'
@@ -662,7 +664,13 @@ def arp_scan():
     if arp_interface:
       command += ['-I', arp_interface]
 
-    result = subprocess.check_output(command, universal_newlines=True)
+    try:
+      result = subprocess.check_output(command, universal_newlines=True)
+    except subprocess.CalledProcessError as e:
+      if e.output:
+        result = e.output
+      else:
+        raise
     lines = result.strip().split('\n')
 
     devices = []
@@ -671,9 +679,15 @@ def arp_scan():
       if len(parts) >= 2:
         ip_address = parts[0]
         mac_address = parts[1]
+        # Attempt to resolve hostname
+        try:
+          hostname = socket.gethostbyaddr(ip_address)[0]
+        except Exception:
+          hostname = ' '.join(parts[2:]) if len(parts) > 2 else "Unknown Device"
+
         # Exclude MAC addresses that are already in the active computers list
         if mac_address not in active_mac_addresses:
-          devices.append({'ip': ip_address, 'mac': mac_address})
+          devices.append({'ip': ip_address, 'mac': mac_address, 'name': hostname})
 
     if not devices:
       return jsonify({'message': 'No new devices found.'})
