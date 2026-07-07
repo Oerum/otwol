@@ -4,7 +4,7 @@ OTWOL is a modern, lightweight, self-hosted web dashboard and management portal 
 
 ---
 
-## 📸 Showcase
+## Showcase
 
 ### Interactive Dashboard
 The main dashboard displays all registered network hosts, their current online/offline status, IP/MAC addresses, and action buttons to wake, ping, or edit.
@@ -18,29 +18,29 @@ Configure individual hosts, probe settings (ICMP Ping, ARP, or TCP), and schedul
 
 ---
 
-## ✨ Features
+## Features
 
-- **📊 Live Host Monitoring**: Track machine status in real-time with background Ajax auto-refreshing. Probing supports:
+- **Live Host Monitoring**: Track machine status in real-time with background Ajax auto-refreshing. Probing supports:
   - **ICMP Ping**: Standard network echo request.
   - **ARP Queries**: Subnet-level MAC address verification.
   - **TCP Ports**: Port connectivity validation.
-- **⚡ Advanced Wake-on-LAN Operations**:
+- **Advanced Wake-on-LAN Operations**:
   - **L4 UDP Broadcast**: Standard magic packet transmission.
   - **L2 Raw Socket Transmission**: Direct Layer-2 raw Ethernet frame generation to custom interfaces (ideal for cross-subnet or complex VLAN topologies).
-- **📅 Smart Automation & Scheduling**:
+- **Smart Automation & Scheduling**:
   - Schedule wake/sleep actions via integrated cron job templates.
   - **Vacation Overrides**: Temporarily disable automation until a specified date.
   - **Exclusion Days**: Easily exclude certain days of the week (e.g., weekends).
   - **Schedule Pausing**: Pause schedules globally or per-host with a single click.
-- **🔒 Flexible Authentication**:
+- **Flexible Authentication**:
   - **Local Authentication**: Form-based user logins.
   - **Single Sign-On (SSO)**: Federated authentication using OpenID Connect (OIDC) (e.g., Keycloak, Auth0, Okta).
-- **🐳 Dockerized Setup**: Fast multi-architecture container deployment with environment variable configuration.
-- **💾 SQLite Backend**: Automatically migrates configuration from flat files (`computers.txt`) into a robust SQLite database.
+- **Dockerized Setup**: Fast multi-architecture container deployment with environment variable configuration.
+- **SQLite Backend**: Automatically migrates configuration from flat files (`computers.txt`) into a robust SQLite database.
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 Deploy the portal quickly using Docker Compose:
 
@@ -71,7 +71,7 @@ Deploy the portal quickly using Docker Compose:
 
 ---
 
-## ⚙️ Configuration Variables
+## Configuration Variables
 
 The following environment variables can be configured inside `docker-compose.yml`:
 
@@ -96,7 +96,7 @@ The following environment variables can be configured inside `docker-compose.yml
 
 ---
 
-## 🛠️ Development
+## Development
 
 ### Managing Dependencies
 To maintain deterministic builds, all dependencies in [app/requirements.txt](file:///C:/Users/Filip/Desktop/otwol/app/requirements.txt) are strictly pinned. When adding or updating a library:
@@ -114,6 +114,6 @@ Pushing to the `main` branch or pushing a tag matching `v*.*.*` automatically tr
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
