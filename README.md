@@ -91,6 +91,8 @@ The following environment variables can be configured inside `docker-compose.yml
 | `OIDC_REDIRECT_URL` | - | Canonical external URL of this deployment. |
 | `WOL_L2_MODE` | `false` | Force Layer-2 raw frame transmission instead of UDP. |
 | `WOL_L2_INTERFACE` | `eth0` | Network interface for L2 packets. |
+| `WOL_PACKET_COUNT` | `3` | Number of magic packets sent per wake/sleep trigger. |
+| `WOL_PACKET_DELAY_MS` | `50` | Delay in milliseconds between repeated magic packets. |
 | `SCAN_PING_TIMEOUT_MS`| `300` | Timeout for ICMP status checks. |
 | `SCAN_ARP_TIMEOUT_MS` | `300` | Timeout for ARP query status checks. |
 

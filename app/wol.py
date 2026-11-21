@@ -10,6 +10,7 @@ import os
 import ipaddress
 import re
 import fcntl
+import time
 
 log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
 logging.basicConfig(
@@ -27,6 +28,8 @@ if arp_interface is None and os.path.exists('/.dockerenv'):
   arp_interface = 'eth0'
 l2_wol_packet = os.environ.get('WOL_L2_MODE', 'false').lower() == 'true'
 l2_interface = os.environ.get('WOL_L2_INTERFACE', 'eth0')
+wol_packet_count = max(1, int(os.environ.get('WOL_PACKET_COUNT') or 3))
+wol_packet_delay = max(0.0, float(os.environ.get('WOL_PACKET_DELAY_MS') or 50) / 1000.0)
 cron_filename = '/etc/cron.d/otwol'
 computer_filename = 'db/computers.txt'
 
@@ -256,7 +259,7 @@ def get_interface_mac(interface):
     finally:
         s.close()
 
-def send_l2_wol_packet(mac_address, interface):
+def send_l2_wol_packet(mac_address, interface, count=wol_packet_count, delay=wol_packet_delay):
     # Clean and convert target MAC address to bytes
     mac_clean = mac_address.replace(':', '').replace('-', '')
     mac_bytes = bytes.fromhex(mac_clean)
@@ -273,21 +276,25 @@ def send_l2_wol_packet(mac_address, interface):
     ether_frame = dst_mac + src_mac + eth_type + magic_packet
 
     # Send via raw socket
-    s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW)
-    try:
+    with socket.socket(socket.AF_PACKET, socket.SOCK_RAW) as s:
         s.bind((interface, 0))
-        s.send(ether_frame)
-    finally:
-        s.close()
+        for i in range(count):
+            s.send(ether_frame)
+            if i + 1 < count and delay > 0:
+                time.sleep(delay)
 
-def send_wol_packet(mac_address):
+def send_wol_packet(mac_address, count=wol_packet_count, delay=wol_packet_delay):
   # Convert the MAC address to a packed binary string
   packed_mac = struct.pack('!6B', *[int(x, 16) for x in mac_address.split(':')])
+  magic_packet = b'\xff' * 6 + packed_mac * 16
 
-  # Create a socket and send the WOL packet
-  s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-  s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-  s.sendto(b'\xff' * 6 + packed_mac * 16, ('<broadcast>', 9))
+  # Create a socket and send a short burst of WOL packets
+  with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    for i in range(count):
+      s.sendto(magic_packet, ('<broadcast>', 9))
+      if i + 1 < count and delay > 0:
+        time.sleep(delay)
 
 def is_computer_awake(ip_address, port):
   if not port or port.lower() == 'icmp':
@@ -628,27 +635,38 @@ def check_status():
 @login_required
 def wol_or_sol_send():
   mac_address = request.form['mac_address']
-  computers = load_computers()
+  action = request.form.get('action', 'auto').strip().lower()
 
-  computer = next(c for c in computers if c['mac_address'] == mac_address)
-  ip_address = computer['ip_address']
-  test_type = computer['test_type']
+  computer = Computer.query.filter_by(mac_address=mac_address).first()
+  if computer is None:
+    logger.warning(f"Manual wake/sleep requested for unknown MAC: {mac_address}")
+    return generate_modal_html([f"Computer with MAC address {mac_address} not found."], "Error"), 404
+
+  if action == 'sol':
+    should_sleep = True
+  elif action == 'wol':
+    should_sleep = False
+  else:
+    should_sleep = is_computer_awake(computer.ip_address, computer.test_type)
 
   messages = []
-  if is_computer_awake(ip_address, test_type):
+  if should_sleep:
     reversed_mac_address = ':'.join(reversed(mac_address.split(':')))
+    logger.info(f"Sending Sleep On LAN magic packet to {computer.name} ({mac_address}, action={action})")
     send_wol_packet(reversed_mac_address)
     title = "Shutdown"
-    messages.append(f"Sleep On Lan Magic Packet Sent to {computer['name']}!")
+    messages.append(f"Sleep On Lan Magic Packet Sent to {computer.name}!")
   else:
     if l2_wol_packet:
-      messages.append(f"Wake On Lan Mode: L2 Packet")
+      logger.info(f"Sending Wake On LAN magic packet (L2 via {l2_interface}) to {computer.name} ({mac_address}, action={action})")
+      messages.append("Wake On Lan Mode: L2 Packet")
       send_l2_wol_packet(mac_address, l2_interface)
     else:
-      messages.append(f"Wake On Lan Mode: L4 Packet")
+      logger.info(f"Sending Wake On LAN magic packet (L4) to {computer.name} ({mac_address}, action={action})")
+      messages.append("Wake On Lan Mode: L4 Packet")
       send_wol_packet(mac_address)
     title = "Wakeup"
-    messages.append(f"Wake On Lan Magic Packet Sent to {computer['name']}!")
+    messages.append(f"Wake On Lan Magic Packet Sent to {computer.name}!")
 
   return generate_modal_html(messages, title)
 

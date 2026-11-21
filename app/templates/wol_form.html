@@ -336,6 +336,7 @@
                 <!-- Power Toggle Button -->
                 <form method="POST" action="{{ url_for('wol_or_sol_send') }}" class="m-0">
                   <input type="hidden" name="mac_address" value="{{ computer.mac_address }}">
+                  <input type="hidden" name="action" value="wol" class="power-action">
                   <button type="submit" class="status-power btn btn-success" data-bs-toggle="tooltip" data-bs-placement="top" title="Wake">
                     <i class="fa-solid fa-power-off"></i>
                   </button>

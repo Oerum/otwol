@@ -49,4 +49,6 @@ services:
       # Raw Layer-2 Wake-on-LAN Settings
       # WOL_L2_MODE: "false" # Force Layer-2 raw frame transmission instead of Layer-4 UDP broadcast.
       # WOL_L2_INTERFACE: "eth0" # Specific network device designated for L2 packet generation.
+      # WOL_PACKET_COUNT: "3" # Number of magic packets sent per wake/sleep trigger for reliability.
+      # WOL_PACKET_DELAY_MS: "50" # Delay in milliseconds between repeated magic packets.
 

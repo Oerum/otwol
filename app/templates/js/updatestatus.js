@@ -20,6 +20,7 @@ function updateStatus(ip_address, test_type, element, buttonElement) {
   fetch(`${check_status_url}?ip_address=${ip_address}&test_type=${test_type}`)
     .then(response => response.text())
     .then(status => {
+      const actionInput = buttonElement ? buttonElement.closest('form')?.querySelector('.power-action') : null;
       // Update the class of the element based on the returned status
       if (status === 'awake') {
         element.classList.remove('asleep');
@@ -27,12 +28,14 @@ function updateStatus(ip_address, test_type, element, buttonElement) {
         buttonElement.classList.remove('btn-success');
         buttonElement.classList.add('btn-danger');
         buttonElement.title = 'Sleep';
+        if (actionInput) actionInput.value = 'sol';
       } else {
         element.classList.remove('awake');
         element.classList.add('asleep');
         buttonElement.classList.remove('btn-danger');
         buttonElement.classList.add('btn-success');
         buttonElement.title = 'Wake';
+        if (actionInput) actionInput.value = 'wol';
       }
     });
 }
